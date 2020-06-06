@@ -1,48 +1,70 @@
 <script>
-  import FusionCharts from 'fusioncharts';
-  import Timeseries from 'fusioncharts/fusioncharts.timeseries';
-  import SvelteFC, { fcRoot } from 'svelte-fusioncharts';
-  import dataSource from './data2.js';
-  import schemaSource from './schema.js';
+  import ApexCharts from 'apexcharts'
+  import { db }  from './firebase';;
+  export let currentStoreData;
 
-  fcRoot(FusionCharts, Timeseries);
-
-  const getChartConfig = () => {
-    const fusionDataStore = new FusionCharts.DataStore(),
-      fusionTable = fusionDataStore.createDataTable(dataSource, schemaSource);
-
-    return {
-      type: 'timeseries',
-      width: '100%',
-      height: 450,
-      renderAt: 'chart-container',
-      dataSource: {
-        data: fusionTable,
-        caption: {
-          text: 'Sales Analysis'
-        },
-        subcaption: {
-          text: 'Grocery'
-        },
-        yAxis: [
-          {
-            plot: {
-              value: 'Grocery Sales Value',
-              type: 'line'
-            },
-            format: {
-              prefix: '$'
-            },
-            title: 'Sale Value'
+  let data = currentStoreData
+  
+  var options = {
+          series: [{
+          data: data.slice()
+  }],
+          
+  chart: {
+          id: 'realtime',
+          height: 350,
+          type: 'line',
+          animations: {
+            enabled: true,
+            easing: 'linear',
+            dynamicAnimation: {
+              speed: 1000
+            }
+          },
+          toolbar: {
+            show: false
+          },
+          zoom: {
+            enabled: false
           }
-        ]
-      }
-    };
-  };
+  },
+  dataLabels: {
+          enabled: false
+  },
+  stroke: {
+          curve: 'smooth'
+  },
+  title: {
+          text: 'Dynamic Updating Chart',
+          align: 'left'
+  },
+  markers: {
+          size: 0
+  },
+  xaxis: {
+          type: 'datetime'
+  },
+  yaxis: {
+          max: 100
+  },
+  legend: {
+          show: false
+  },};
+
+  var chart = new ApexCharts(document.querySelector("#chart"), options);
+  chart.render();
+  window.setInterval(function () {
+        getNewSeries(lastDate, {
+          min: 10,
+          max: 90
+  })
+  chart.updateSeries([{
+          data: data
+  }])
+  }, 1000)
+      
+
 </script>
 
-<div id="chart-container" >
-    <SvelteFC
-      {...getChartConfig()}
-    />
+<div id="chart">
 </div>

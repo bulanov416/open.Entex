@@ -2,12 +2,12 @@ export default schema;
 
 let schema = [
   {
-      "name": "Time",
-      "type": "date",
-      "format": "%d-%b-%y"
+    name: "Time",
+    type: "date",
+    format: "%Q",
   },
   {
-    "name": "Grocery Sales Value",
-    "type": "number"
-  }
-]
+    name: "People In Store",
+    type: "number",
+  },
+];

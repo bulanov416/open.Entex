@@ -16,6 +16,7 @@
     "svelte": "^3.0.0"
   },
   "dependencies": {
+    "apexcharts": "^3.19.2",
     "firebase": "^7.15.0",
     "fusioncharts": "^3.15.1-sr.1",
     "sirv-cli": "^0.4.4",

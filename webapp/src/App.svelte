@@ -38,13 +38,16 @@
 	import Sidebar from './Sidebar.svelte'
 	import Main from './Main.svelte';
 
+
+
 	let open = false
 
 </script>
 
 <Sidebar bind:open allStores={stores}/>
 <Navbar bind:sidebar={open}/>
-<Main currentStore={$currentStoreId}/>
+<!--<Main currentStore={$currentStoreId} currentStoreData={$currentStoreData}/>-->
+<Main currentStore={$currentStoreId} />
 
 <svelte:head>
 	<link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet"/>

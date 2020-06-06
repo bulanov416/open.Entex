@@ -1,0 +1,35 @@
+<script>
+  import ApexCharts from 'apexcharts'
+  import { currentStoreData } from './storeDataStore.js';
+  console.log($currentStoreData)
+
+  var options = {
+  chart: {
+    height: 380,
+    width: "100%",
+    type: "area",
+    animations: {
+      initialAnimation: {
+        enabled: false
+      }
+    }
+  },
+  series: [
+    {
+      name: "Series 1",
+      data: {$currentStoreData}
+    }
+  ],
+  xaxis: {
+    type: 'datetime'
+  }
+};
+
+var chart = new ApexCharts(document.querySelector("#chart"), options);
+
+chart.render();     
+
+</script>
+
+<div id="chart">
+</div>

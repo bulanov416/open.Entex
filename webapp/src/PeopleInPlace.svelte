@@ -1,6 +1,8 @@
 <script>
     import { db}  from './firebase';
-    export let currentStore;
+	export let currentStore;
+	import Chart from './Chart.svelte';
+	import Graph from './Graph.svelte';
     
     function peopleInPlace() {db.collection("stores").doc(currentStore).collection("dataSamples").onSnapshot(function(querySnapshot) {
         var dataPoints = [];
@@ -8,14 +10,15 @@
             let foo = {id: doc.id, timeStamp: doc.get("timeStamp"), numPeople: doc.get("numPeople")}
             dataPoints.push(foo);
         });
-        console.log(dataPoints)
+		console.log(dataPoints)
+		dataPoints = dataPoints
         return dataPoints
    })}
 </script>
 
 <div>
 	<h2>The store is {currentStore}</h2>
-    <h1>{JSON.stringify(peopleInPlace())}</h1>
+	<Graph timeBits={peopleInPlace()}/>
 </div>
 
 <style>

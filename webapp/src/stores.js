@@ -1,3 +1,3 @@
 import { writable } from 'svelte/store';
 
-export const currentStoreId = writable('None');;
+export const currentStoreId = writable('');

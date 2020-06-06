@@ -3,13 +3,19 @@
 	export let currentStore;
 	import { db }  from './firebase';
 	import Chart from './Chart.svelte';
-	import GraphHandler from './GraphHandler.svelte';
+	import Graph from './Graph.svelte';
+	import {currentStoreData } from './storeDataStore.js';
+
+	if (!!currentStore) {
+		console.log("foo")
+		currentStoreData.set(storeName)
+	}
+	
     
 </script>
 <main class="p-4">
-	{#if !!currentStore}
+	{#if !!currentStore && !!currentStoreData}
 	<h1>welcome to {currentStore}</h1>
-	<GraphHandler currentStore={currentStore}/>
 	{:else}
 	<strong>Welcome to ____ Please choose a store from the menue on the left</strong>
 	{/if}
@@ -18,6 +24,9 @@
 <style>
 	main {
 		text-align: center;
+		padding: 1em;
+		max-width: 240px;
+		margin: 0 auto;
 	}
 
 	h1 {
