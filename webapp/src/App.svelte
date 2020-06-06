@@ -1,14 +1,14 @@
 <script>
 	export let name;
 	import { db}  from './firebase';
+	import { onMount } from 'svelte';
+	import NewComp from './NewComp.svelte';
 
 	
-	function getStores() {
-		db.collection("stores").get().then((querySnapshot) => {
-			querySnapshot.forEach((doc) => {
-				console.log(doc.id);
-			});
-		});
+	/*function getStores() {
+		let tempStores = [];
+		
+		return tempStores;
 	}
 
 	function getPeople(storeName) {
@@ -17,11 +17,22 @@
 				console.log(doc.id + " || " + doc.get("timeStamp") + " || " + doc.get("numPeople"));
 			});
 		});
-	}
+	}*/
 
-	getStores();
+	let stores = [];
 
-	getPeople("walmart");
+	onMount(async () => {
+		await db.collection("stores").get().then((querySnapshot) => {
+
+			querySnapshot.forEach((doc) => {
+				console.log(doc.id);
+				let mountStore = { id: doc.id, name: doc.get("StoreName")}
+				stores.push(mountStore)
+			});
+		stores = stores
+		});
+		console.log(stores)
+	})
 
 	import Navbar from './Navbar.svelte'
 	import Sidebar from './Sidebar.svelte'
@@ -38,6 +49,15 @@
 <svelte:head>
 	<link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet"/>
 </svelte:head>
+
+	<div class="stores">
+	{#each stores as store}
+	<p>{store.id}</p>
+		{:else}
+		<!-- this block renders when photos.length === 0 -->
+		<p>loading...</p>
+	{/each}
+	</div>
 
 <style>
 	main {
