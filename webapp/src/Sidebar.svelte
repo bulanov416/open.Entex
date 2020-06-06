@@ -4,6 +4,7 @@
 	export let open = false
 	export let allStores;
 	export let numPeopleArray = [];
+	
 
 	
 
