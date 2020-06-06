@@ -15,10 +15,9 @@ HEIGHT = 0
 ENTER = 0
 EXIT = 0
 
-#Initializes arrays for object tracking
-xcord = []
-ycord = []
-objectPath = []
+#People
+people_in_frame = []
+gone_people = []
 
 #Colors
 blue = np.array([255, 0, 0])
@@ -46,37 +45,30 @@ def island_size(scores, vted, rows, cols, i, j):
 
 # GIVES ALL THE ISLAND INFO. Size, mean, etc.
 def get_orange_island(scores, vted, rows, cols, i, j, step):
-    vted[i, j] = True
+
     orange_island = {
         "size": 1,
         "x-coords": [i * step],
         "y-coords": [j * step]
     }
-    if i - 1 >= 0 and scores[i-1, j] and not vted[i-1, j]:
-        o_i = get_orange_island(scores, vted, rows, cols, i-1, j, step)
-        orange_island["size"] += o_i["size"]
-        orange_island["x-coords"] += o_i["x-coords"]
-        orange_island["y-coords"] += o_i["y-coords"]
-    # Important to have rows-1
-    if i + 1 < rows - 1 and scores[i+1, j] and not vted[i+1, j]:
-        o_i = get_orange_island(scores, vted, rows, cols, i+1, j, step)
-        orange_island["size"] += o_i["size"]
-        orange_island["x-coords"] += o_i["x-coords"]
-        orange_island["y-coords"] += o_i["y-coords"]
-    if j - 1 >= 0 and scores[i, j-1] and not vted[i, j-1]:
-        o_i = get_orange_island(scores, vted, rows, cols, i, j-1, step)
-        orange_island["size"] += o_i["size"]
-        orange_island["x-coords"] += o_i["x-coords"]
-        orange_island["y-coords"] += o_i["y-coords"]
-    if j + 1 < cols and scores[i, j+1] and not vted[i, j+1]:
-        o_i = get_orange_island(scores, vted, rows, cols, i, j+1, step)
-        orange_island["size"] += o_i["size"]
-        orange_island["x-coords"] += o_i["x-coords"]
-        orange_island["y-coords"] += o_i["y-coords"]
-    return orange_island
 
-people_in_frame = []
-gone_people = []
+    def update_oi (o_i):
+        orange_island["size"] += o_i["size"]
+        orange_island["x-coords"] += o_i["x-coords"]
+        orange_island["y-coords"] += o_i["y-coords"]
+
+    vted[i, j] = True
+
+    if i - 1 >= 0 and scores[i-1, j] and not vted[i-1, j]:
+        update_oi(get_orange_island(scores, vted, rows, cols, i-1, j, step))
+    if i + 1 < rows and scores[i+1, j] and not vted[i+1, j]:
+        update_oi(get_orange_island(scores, vted, rows, cols, i+1, j, step))
+    if j - 1 >= 0 and scores[i, j-1] and not vted[i, j-1]:
+        update_oi(get_orange_island(scores, vted, rows, cols, i, j-1, step))
+    if j + 1 < cols and scores[i, j+1] and not vted[i, j+1]:
+        update_oi(get_orange_island(scores, vted, rows, cols, i, j+1, step))
+
+    return orange_island
 
 class Person:
     def __init__(self, x, y):
@@ -88,12 +80,7 @@ def str_oi(oi):
     return str(oi["x-mean"]) + ':' + str(oi["y-mean"])
 
 def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
-    global xcord
-    global ycord
-    global objectPath
-    global ENTER
-    global EXIT
-    global people_in_frame
+    global ENTER, EXIT, people_in_frame
 
     scores_rows = (WIDTH - box_w) // step + 1
     scores_cols = (HEIGHT - box_h) // step + 1
@@ -104,38 +91,14 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
         for j in range(0, HEIGHT - box_h, step):
             scores[i // step, j // step] = np.sum(fgmask[j:j+box_h, i:i+box_w]) / (box_w * box_h * 255)
 
-    THICC = 3
     visited = np.zeros(np.shape(scores), dtype = bool)
     scores = scores > threshold
 
     num_people = 0
-    for i in range(scores_rows - 1):
-        for j in range(scores_cols):
-            score = scores[i, j]
-            x = i * step
-            y = j * step
-            if score:
-                xcord.append(x)
-                ycord.append(y)
-                frame[y:y+step, x:x+step] = yellow
-                """
-                # Left edge
-                if x - THICC >= 0 and scores[i - 1, j] < threshold:
-                    frame[y:y+step, x-THICC:x] = green
-                # Right edge
-                if x + step < WIDTH and scores[i + 1, j] < threshold:
-                    frame[y:y+step, x+step-THICC:x+step-1] = green
-                # Top
-                if y - THICC >= 0 and scores[i, j - 1] < threshold:
-                    frame[y-THICC:y, x:x+step] = green
-                # Bottom
-                if y + step < HEIGHT and scores[i, j + 1] < threshold:
-                    frame[y+step-THICC:y+step, x:x+step-1] = green
-                """
 
-    # Build list of orange islands
     orange_visited = np.zeros(shape=scores.shape, dtype=bool)
     orange_islands = []
+
     for i in range(scores_rows - 1):
         for j in range(scores_cols):
             if scores[i, j] and not orange_visited[i, j]:
@@ -145,34 +108,10 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
 
     for orange_island in orange_islands:
         # Retrieve island properties
-        x_coords = orange_island["x-coords"]
-        y_coords = orange_island["y-coords"]
-        x_mean = int(np.mean(x_coords))
-        y_mean = int(np.mean(y_coords))
-        orange_island["x-mean"] = x_mean
-        orange_island["y-mean"] = y_mean
-
-        for x, y in zip(x_coords, y_coords):
+        orange_island["x-mean"] = int(np.mean(orange_island["x-coords"]))
+        orange_island["y-mean"] = int(np.mean(orange_island["y-coords"]))
+        for x, y in zip(orange_island["x-coords"], orange_island["y-coords"]):
             frame[y:y+step, x:x+step] = orange
-        """
-        objectPath.append([x_mean, y_mean])
-        for k in range(len(objectPath) - 10, len(objectPath)):
-            if k >= 0:
-                frame[objectPath[k][1]-4:objectPath[k][1]+4, objectPath[k][0]-4:objectPath[k][0]+4] = red
-        frame[y_mean-16:y_mean+16, x_mean-16:x_mean+16] = blue
-
-        if len(objectPath) > 10:
-            x1 = objectPath[0][0]
-            x10 = objectPath[-10][0]
-            if x1 > 3*WIDTH//4 or x10 < WIDTH//4:
-                objectPath = []
-            elif x1 > WIDTH//2 and x10 < WIDTH//2:
-                EXIT += 1
-                objectPath = []
-            elif x1 < WIDTH//2 and x10 > WIDTH//2:
-                ENTER += 1
-                objectPath = []
-        """
 
     CLOSENESS_THRESHOLD = 200
     new_people_in_frame = []
