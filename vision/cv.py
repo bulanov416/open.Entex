@@ -21,6 +21,7 @@ blue = np.array([255, 0, 0])
 green = np.array([0, 255, 0])
 red = np.array([0, 0, 255])
 orange = np.array([0, 128, 255])
+yellow = np.array([0, 255, 255])
 
 #Recursive function detect if it is a person or noise
 def island_size(scores, vted, rows, cols, i, j):
@@ -95,7 +96,7 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
             if score:
                 xcord.append(x)
                 ycord.append(y)
-                frame[y:y+step, x:x+step] = green
+                frame[y:y+step, x:x+step] = yellow
                 """
                 # Left edge
                 if x - THICC >= 0 and scores[i - 1, j] < threshold:
@@ -144,9 +145,10 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
     ycord = []
     xcord = []
     """
+    return {
+        "people": orange_islands
+    }
 
-
-frame_count = 0
 while True:
     ret, frame = video.read()
 
@@ -156,11 +158,28 @@ while True:
 
     backtorgb = cv.cvtColor(fgmask, cv.COLOR_GRAY2RGB)
 
-    bounding_boxes(fgmask, frame, 32, 32, 32, 0.4, 40)
+    box_info = bounding_boxes(fgmask, frame, 32, 32, 32, 0.4, 40)
+
+    box_text = f"Number of People: {len(box_info['people'])}"
+
+    # font 
+    font = cv.FONT_HERSHEY_SIMPLEX 
+  
+    # org 
+    org = (50, 50) 
+      
+    # fontScale 
+    fontScale = 1
+      
+    # Line thickness of 2 px 
+    thickness = 2
+       
+    # Using cv2.putText() method 
+    frame = cv.putText(frame, box_text, org, font,  
+                       fontScale, (255, 255, 255), thickness, cv.LINE_AA)
 
     cv.imshow('frame', frame)
     k = cv.waitKey(30) & 0xff
-    frame_count += 1
     if k == 27:
         break
 
