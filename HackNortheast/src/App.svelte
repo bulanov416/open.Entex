@@ -7,16 +7,16 @@
   import "firebase/performance";
   import "firebase/analytics";
 
-let firebaseConfig = {
-  apiKey: "AIzaSyAQaqXyzLZSufQ_kHkrNnQ4at3q_MBb2B4",
-  authDomain: "hacknortheast.firebaseapp.com",
-  databaseURL: "https://hacknortheast.firebaseio.com",
-  projectId: "hacknortheast",
-  storageBucket: "hacknortheast.appspot.com",
-  messagingSenderId: "700688984971",
-  appId: "1:700688984971:web:922dade65aa0692d555d8e",
-  measurementId: "G-1DL5HFVN5K"
-};
+  let firebaseConfig = {
+    apiKey: "AIzaSyAQaqXyzLZSufQ_kHkrNnQ4at3q_MBb2B4",
+    authDomain: "hacknortheast.firebaseapp.com",
+    databaseURL: "https://hacknortheast.firebaseio.com",
+    projectId: "hacknortheast",
+    storageBucket: "hacknortheast.appspot.com",
+    messagingSenderId: "700688984971",
+    appId: "1:700688984971:web:922dade65aa0692d555d8e",
+    measurementId: "G-1DL5HFVN5K"  
+  };
 
   firebase.initializeApp(firebaseConfig);
 </script>
