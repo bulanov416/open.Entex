@@ -40,7 +40,7 @@
 
 </script>
 
-<Sidebar bind:open/>
+<Sidebar bind:open allStores={stores}/>
 <Navbar bind:sidebar={open}/>
 <Main/>
 
@@ -48,14 +48,7 @@
 	<link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet"/>
 </svelte:head>
 
-	<div class="stores">
-	{#each stores as store}
-	<p>{store.id}</p>
-		{:else}
-		<!-- this block renders when photos.length === 0 -->
-		<p>loading...</p>
-	{/each}
-	</div>
+
 
 <style>
 	main {

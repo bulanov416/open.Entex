@@ -1,11 +1,16 @@
 <script>
 	export let open = false
+	export let allStores;
 </script>
 
 <aside class="absolute w-full h-full bg-gray-200 border-r-2 shadow-lg" class:open>
  <nav class="p-12 text-xl">
+ 	<div class="allStores">
+	{#each allStores as store}
+	<a class="block" href={store.id}>{store.name}</a>
+	{/each}
+	</div>
     <a class="block" href="#about">About</a>
-    <a class="block" href="#contact">Contact</a>
   </nav>
 </aside>
 
