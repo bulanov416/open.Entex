@@ -1,11 +1,14 @@
 <script>
 	import { db } from './firebase';
+	import { currentStoreId } from './stores.js';
 	export let open = false
 	export let allStores;
 	export let numPeopleArray = [];
 
-	async function populateData(storeName) {
-		await db.collection("stores").doc(storeName).collection("dataSamples").get().then((querySnapshot) => {
+	
+
+	function populateData(storeName) {
+		/*await db.collection("stores").doc(storeName).collection("dataSamples").get().then((querySnapshot) => {
 			querySnapshot.forEach((doc) => {
 				console.log(doc.id);
 				let data = {numPeople: doc.get("numPeople"), timeStamp: doc.get("timeStamp")}
@@ -15,7 +18,10 @@
 			numPeopleArray = numPeopleArray;
 		});
 		console.log(numPeopleArray);
-		return numPeopleArray;
+		return numPeopleArray;*/
+		console.log(storeName)
+		currentStoreId.set(storeName)
+		open = false;
 	}
 
 
