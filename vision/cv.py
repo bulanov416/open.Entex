@@ -75,12 +75,25 @@ def get_orange_island(scores, vted, rows, cols, i, j, step):
         orange_island["y-coords"] += o_i["y-coords"]
     return orange_island
 
+people_in_frame = []
+gone_people = []
+
+class Person:
+    def __init__(self, x, y):
+        self.x_history = [x]
+        self.y_history = [y]
+        self.color = np.array([np.random.randint(50, 255), np.random.randint(50, 255), np.random.randint(50, 255)])
+
+def str_oi(oi):
+    return str(oi["x-mean"]) + ':' + str(oi["y-mean"])
+
 def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
     global xcord
     global ycord
     global objectPath
     global ENTER
     global EXIT
+    global people_in_frame
 
     scores_rows = (WIDTH - box_w) // step + 1
     scores_cols = (HEIGHT - box_h) // step + 1
@@ -136,9 +149,12 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
         y_coords = orange_island["y-coords"]
         x_mean = int(np.mean(x_coords))
         y_mean = int(np.mean(y_coords))
+        orange_island["x-mean"] = x_mean
+        orange_island["y-mean"] = y_mean
+
         for x, y in zip(x_coords, y_coords):
             frame[y:y+step, x:x+step] = orange
-
+        """
         objectPath.append([x_mean, y_mean])
         for k in range(len(objectPath) - 10, len(objectPath)):
             if k >= 0:
@@ -151,19 +167,63 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
             if x1 > 3*WIDTH//4 or x10 < WIDTH//4:
                 objectPath = []
             elif x1 > WIDTH//2 and x10 < WIDTH//2:
-                print("HELLOW")
                 EXIT += 1
                 objectPath = []
             elif x1 < WIDTH//2 and x10 > WIDTH//2:
                 ENTER += 1
                 objectPath = []
+        """
 
+    CLOSENESS_THRESHOLD = 200
+    new_people_in_frame = []
+    matched_orange_islands = set()
+    for person in people_in_frame:
+        px = person.x_history[-1]
+        py = person.y_history[-1]
+        preserved = False
+        for orange_island in orange_islands:
+            ox = orange_island["x-mean"]
+            oy = orange_island["y-mean"]
+            if np.sqrt((ox - px) ** 2 + (oy - py) ** 2) <= CLOSENESS_THRESHOLD:
+                person.x_history.append(ox)
+                person.y_history.append(oy)
+                new_people_in_frame.append(person)
+                matched_orange_islands.add(str_oi(orange_island))
+                preserved = True
+                break
+        if not preserved:
+            gone_people.append(person)
 
+    for orange_island in orange_islands:
+        ox = orange_island["x-mean"]
+        oy = orange_island["y-mean"]
+        if str_oi(orange_island) not in matched_orange_islands:
+            gone_person = None
+            """for person in reversed(gone_people):
+                px = person.x_history[-1]
+                py = person.y_history[-1]
+                if np.sqrt((ox - px) ** 2 + (oy - py) ** 2) <= CLOSENESS_THRESHOLD:
+                    gone_person = person
+                    break"""
+            if gone_person == None:
+                new_people_in_frame.append(Person(orange_island["x-mean"], orange_island["y-mean"]))
+            else:
+                gone_person.x_history.append(ox)
+                gone_person.y_history.append(oy)
+                new_people_in_frame.append(gone_person)
+
+    people_in_frame = new_people_in_frame
     #frame[0:HEIGHT, WIDTH//4-2:WIDTH//4+2] = purple
     #frame[0:HEIGHT, 3*WIDTH//4-2:3*WIDTH//4+2] = purple
     frame[0:HEIGHT, WIDTH//2-4:WIDTH//2+4] = purple
 
-
+    for person in people_in_frame:
+        x_history = person.x_history
+        y_history = person.y_history
+        for k in range(len(x_history) - 10, len(x_history)):
+            if k >= 0:
+                frame[y_history[k]-4:y_history[k]+4, x_history[k]-4:x_history[k]+4] = person.color
+        frame[y_history[-1]-16:y_history[-1]+16, x_history[-1]-16:x_history[-1]+16] = blue
     """
     if len(xcord) != 0 and len(ycord) != 0:
         xmean = int(np.sum(np.array(xcord))//len(xcord))
@@ -174,7 +234,7 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
     xcord = []
     """
     return {
-        "people": orange_islands
+        "people": people_in_frame
     }
 
 while True:
