@@ -19,6 +19,7 @@
   };
 
   firebase.initializeApp(firebaseConfig);
+  var provider = new firebase.auth.GoogleAuthProvider();
 </script>
 
 <main>
@@ -44,7 +45,7 @@
 
 
     <!-- 2. 😀 Get the current user -->
-    <User let:user let:auth>
+      <User let:user let:auth>
       Howdy 😀! User
       <em>{user.uid}</em>
 
@@ -52,7 +53,7 @@
 
       <div slot="signed-out">
 
-        <button on:click={() => auth.signInAnonymously()}>
+        <button on:click={() => auth.signInWithPopup(provider)}>
           Sign In Anonymously
         </button>
       </div>
