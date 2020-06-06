@@ -14,6 +14,7 @@ HEIGHT = 0
 #Initializes arrays for object tracking
 xcord = []
 ycord = []
+objectPath = []
 
 #Colors
 blue = np.array([255, 0, 0])
@@ -21,22 +22,11 @@ green = np.array([0, 255, 0])
 red = np.array([0, 0, 255])
 orange = np.array([0, 128, 255])
 
-"""
-def outlined_rect(frame, x, y, w, h, thick, color):
-    #Edge cases
-    if x - thick < 0 or y - thick < 0 or x + w >= WIDTH or y + h >= HEIGHT:
-        return
-
-    #Draws Each Border
-    frame[y:y + h, x-thick:x] = color
-    frame[y:y + h, x+w-thick:x+w-1] = color
-    frame[y-thick:y, x:x + w] = color
-    frame[y+h-thick:y+h, x:x+w-1] = color
-"""
-
+#Recursive function detect if it is a person or noise
 def island_size(scores, vted, rows, cols, i, j):
     vted[i, j] = True
     isl_size = 1
+
     if i - 1 >= 0 and scores[i-1, j] and not vted[i-1, j]:
         isl_size += island_size(scores, vted, rows, cols, i-1, j)
     if i + 1 < rows and scores[i+1, j] and not vted[i+1, j]:
@@ -45,20 +35,8 @@ def island_size(scores, vted, rows, cols, i, j):
         isl_size += island_size(scores, vted, rows, cols, i, j-1)
     if j + 1 < cols and scores[i, j+1] and not vted[i, j+1]:
         isl_size += island_size(scores, vted, rows, cols, i, j+1)
-    return isl_size
 
-"""
-def falsify(scores, rows, cols, i, j):
-    scores[i, j] = 0
-    if i - 1 >= 0 and scores[i-1, j]:
-        falsify(scores, rows, cols, i-1, j)
-    if i + 1 < rows and scores[i+1, j]:
-        falsify(scores, rows, cols, i+1, j)
-    if j - 1 >= 0 and scores[i, j-1]:
-        falsify(scores, rows, cols, i, j-1)
-    if j + 1 < cols and scores[i, j+1]:
-        falsify(scores, rows, cols, i, j+1)
-"""
+    return isl_size
 
 # GIVES ALL THE ISLAND INFO. Size, mean, etc.
 def get_orange_island(scores, vted, rows, cols, i, j, step):
@@ -94,43 +72,21 @@ def get_orange_island(scores, vted, rows, cols, i, j, step):
 def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
     global xcord
     global ycord
-    # scores is a matrix containing values 0 <= x <= 1.
-    # 0 indicates a completely black area and 1 indicates
-    # a completely white area.
+
     scores_rows = (WIDTH - box_w) // step + 1
     scores_cols = (HEIGHT - box_h) // step + 1
+
     scores = np.empty(shape=(scores_rows, scores_cols))
+
     for i in range(0, WIDTH - box_w, step):
         for j in range(0, HEIGHT - box_h, step):
             scores[i // step, j // step] = np.sum(fgmask[j:j+box_h, i:i+box_w]) / (box_w * box_h * 255)
 
-
     THICC = 3
-
     visited = np.zeros(np.shape(scores), dtype = bool)
     scores = scores > threshold
-    #print(visited)
 
     num_people = 0
-    """
-    for i in range(scores_rows - 1):
-
-        for j in range(scores_cols - 1):
-            isl_size = island_size(scores, visited, scores_rows, scores_cols, i, j)
-
-            if isl_size >= isl_threshold:
-                for x, y in zip(xcord, ycord):
-                    frame[y*step:(y+1)*step, x*step:(x+1)*step] = orange
-
-                xmean = np.sum(np.array(xcord))//len(xcord)*step
-                ymean = np.sum(np.array(ycord))//len(ycord)*step
-                frame[ymean-8:ymean+8, xmean-8:xmean+8] = red
-                ycord = []
-                xcord = []
-                num_people += 1
-            print(isl_size)
-    """
-
     for i in range(scores_rows - 1):
         for j in range(scores_cols):
             score = scores[i, j]
@@ -173,6 +129,10 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
         y_mean = int(np.mean(y_coords))
         for x, y in zip(x_coords, y_coords):
             frame[y:y+step, x:x+step] = orange
+        objectPath.append([x_mean, y_mean])
+        for k in range(len(objectPath) - 10, len(objectPath)):
+            if k >= 0:
+                frame[objectPath[k][1]-4:objectPath[k][1]+4, objectPath[k][0]-4:objectPath[k][0]+4] = red
         frame[y_mean-16:y_mean+16, x_mean-16:x_mean+16] = blue
 
     """
