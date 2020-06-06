@@ -5,20 +5,20 @@ import sys
 video = cv.VideoCapture('ptest.avi')
 
 sys.setrecursionlimit(2000)
-fgbg = cv.createBackgroundSubtractorMOG2(varThreshold=100, detectShadows = True)
+backgroundSubtractor = cv.createBackgroundSubtractorMOG2(varThreshold=100, detectShadows = True)
 
-#Initializes width and height
+#Initializes video width and height
 WIDTH = 0
 HEIGHT = 0
 
-#Total tallies
+#Total tallies of people entering and exiting
 ENTER = 0
 EXIT = 0
 
 #People
 people_in_frame = []
 
-#Colors
+#Colors for drawing CV/UI
 blue = np.array([255, 0, 0])
 green = np.array([0, 255, 0])
 red = np.array([0, 0, 255])
@@ -27,23 +27,23 @@ orange = np.array([0, 128, 255])
 yellow = np.array([0, 255, 255])
 
 #Recursive function detect if it is a person or noise
-def island_size(scores, vted, rows, cols, i, j):
-    vted[i, j] = True
+def island_size(scores, visited, rows, cols, i, j):
+    visited[i, j] = True
     isl_size = 1
 
-    if i - 1 >= 0 and scores[i-1, j] and not vted[i-1, j]:
-        isl_size += island_size(scores, vted, rows, cols, i-1, j)
-    if i + 1 < rows and scores[i+1, j] and not vted[i+1, j]:
-        isl_size += island_size(scores, vted, rows, cols, i+1, j)
-    if j - 1 >= 0 and scores[i, j-1] and not vted[i, j-1]:
-        isl_size += island_size(scores, vted, rows, cols, i, j-1)
-    if j + 1 < cols and scores[i, j+1] and not vted[i, j+1]:
-        isl_size += island_size(scores, vted, rows, cols, i, j+1)
+    if i - 1 >= 0 and scores[i-1, j] and not visited[i-1, j]:
+        isl_size += island_size(scores, visited, rows, cols, i-1, j)
+    if i + 1 < rows and scores[i+1, j] and not visited[i+1, j]:
+        isl_size += island_size(scores, visited, rows, cols, i+1, j)
+    if j - 1 >= 0 and scores[i, j-1] and not visited[i, j-1]:
+        isl_size += island_size(scores, visited, rows, cols, i, j-1)
+    if j + 1 < cols and scores[i, j+1] and not visited[i, j+1]:
+        isl_size += island_size(scores, visited, rows, cols, i, j+1)
 
     return isl_size
 
 # GIVES ALL THE ISLAND INFO. Size, mean, etc.
-def get_orange_island(scores, vted, rows, cols, i, j, step):
+def get_orange_island(scores, visited, rows, cols, i, j, step):
 
     orange_island = {
         "size": 1,
@@ -56,16 +56,16 @@ def get_orange_island(scores, vted, rows, cols, i, j, step):
         orange_island["x-coords"] += o_i["x-coords"]
         orange_island["y-coords"] += o_i["y-coords"]
 
-    vted[i, j] = True
+    visited[i, j] = True
 
-    if i - 1 >= 0 and scores[i-1, j] and not vted[i-1, j]:
-        update_oi(get_orange_island(scores, vted, rows, cols, i-1, j, step))
-    if i + 1 < rows and scores[i+1, j] and not vted[i+1, j]:
-        update_oi(get_orange_island(scores, vted, rows, cols, i+1, j, step))
-    if j - 1 >= 0 and scores[i, j-1] and not vted[i, j-1]:
-        update_oi(get_orange_island(scores, vted, rows, cols, i, j-1, step))
-    if j + 1 < cols and scores[i, j+1] and not vted[i, j+1]:
-        update_oi(get_orange_island(scores, vted, rows, cols, i, j+1, step))
+    if i - 1 >= 0 and scores[i-1, j] and not visited[i-1, j]:
+        update_oi(get_orange_island(scores, visited, rows, cols, i-1, j, step))
+    if i + 1 < rows and scores[i+1, j] and not visited[i+1, j]:
+        update_oi(get_orange_island(scores, visited, rows, cols, i+1, j, step))
+    if j - 1 >= 0 and scores[i, j-1] and not visited[i, j-1]:
+        update_oi(get_orange_island(scores, visited, rows, cols, i, j-1, step))
+    if j + 1 < cols and scores[i, j+1] and not visited[i, j+1]:
+        update_oi(get_orange_island(scores, visited, rows, cols, i, j+1, step))
 
     return orange_island
 
@@ -74,7 +74,7 @@ class Person:
         self.x_history = [x]
         self.y_history = [y]
         self.movement = 0;
-        self.color = np.array([np.random.randint(50, 255), np.random.randint(50, 255), np.random.randint(50, 255)])
+        #self.color = np.array([np.random.randint(50, 255), np.random.randint(50, 255), np.random.randint(50, 255)])
 
 def str_oi(oi):
     return str(oi["x-mean"]) + ':' + str(oi["y-mean"])
@@ -110,8 +110,8 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
         # Retrieve island properties
         orange_island["x-mean"] = int(np.mean(orange_island["x-coords"]))
         orange_island["y-mean"] = int(np.mean(orange_island["y-coords"]))
-        for x, y in zip(orange_island["x-coords"], orange_island["y-coords"]):
-            frame[y:y+step, x:x+step] = green
+        #for x, y in zip(orange_island["x-coords"], orange_island["y-coords"]):
+            #frame[y:y+step, x:x+step] = green
 
     CLOSENESS_THRESHOLD = 200
     new_people_in_frame = []
@@ -149,8 +149,11 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
             if x1 > 3*WIDTH//4 or x1 < WIDTH//4:
                 person.movement = 0
     #PURPLE BAR
-    frame[0:HEIGHT, WIDTH//2-4:WIDTH//2+4] = purple
-
+    frame[0:16, 0:WIDTH//2] = purple
+    frame[HEIGHT-16:HEIGHT, 0:WIDTH//2] = purple
+    frame[0:HEIGHT, WIDTH//2-8:WIDTH//2+8] = purple
+    frame[HEIGHT-200:HEIGHT - 30, WIDTH//2-125:WIDTH//2 + 300] = purple
+    """
     for person in people_in_frame:
         x_history = person.x_history
         y_history = person.y_history
@@ -158,44 +161,37 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
             if k >= 0:
                 frame[y_history[k]-8:y_history[k]+8, x_history[k]-8:x_history[k]+8] = person.color
         frame[y_history[-1]-16:y_history[-1]+16, x_history[-1]-16:x_history[-1]+16] = blue
-
-    return {
-        "people": people_in_frame
-    }
+    """
+    return { "people": people_in_frame }
 
 while True:
     ret, frame = video.read()
 
-    fgmask = fgbg.apply(frame)
+    fgmask = backgroundSubtractor.apply(frame)
     HEIGHT = fgmask.shape[0]
     WIDTH = fgmask.shape[1]
 
     backtorgb = cv.cvtColor(fgmask, cv.COLOR_GRAY2RGB)
-
     box_info = bounding_boxes(fgmask, frame, 32, 32, 32, 0.4, 40)
-
-    box_text = f"Number of People: {len(box_info['people'])}"
+    box_text = f"Visible People: {len(box_info['people'])}"
 
     # font
     font = cv.FONT_HERSHEY_SIMPLEX
-
-    # org
-    org = (50, 50)
-
-    # fontScale
-    fontScale = 1
-
-    # Line thickness of 2 px
-    thickness = 2
+    fontScale = 1.5
+    thickness = 4
 
     # Using cv2.putText() method
-    frame = cv.putText(frame, box_text, org, font,
+    frame = cv.putText(frame, box_text, (WIDTH*4//9, HEIGHT - 150), font,
                        fontScale, (255, 255, 255), thickness, cv.LINE_AA)
-    frame = cv.putText(frame, ('ENTER: ' + str(ENTER)), (50, 100), font,
+    frame = cv.putText(frame, ('Entered: ' + str(ENTER)), (WIDTH*4//9, HEIGHT - 100), font,
                        fontScale, (255, 255, 255), thickness, cv.LINE_AA)
-    frame = cv.putText(frame, ('EXIT: ' + str(EXIT)), (50, 150), font,
+    frame = cv.putText(frame, ('Left: ' + str(EXIT)), (WIDTH*4//9, HEIGHT - 50), font,
                        fontScale, (255, 255, 255), thickness, cv.LINE_AA)
 
+    frame = cv.putText(frame, ('INSIDE: ' + str(ENTER - EXIT)), (WIDTH*1//6, 150), font,
+        2*fontScale, (255, 255, 255), 4*thickness, cv.LINE_AA)
+    frame = cv.putText(frame, ('OUTSIDE'), (WIDTH*4//6, 150), font,
+        2*fontScale, (255, 255, 255), 4*thickness, cv.LINE_AA)
     cv.imshow('frame', frame)
     k = cv.waitKey(30) & 0xff
     if k == 27:
