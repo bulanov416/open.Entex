@@ -1,96 +1,124 @@
-import cv2
+import cv2 as cv
 import numpy as np
-
 import sys
+
+video = cv.VideoCapture('ptest.avi')
+
 sys.setrecursionlimit(2000)
-# Video available at https://www.youtube.com/watch?v=RQgn1m9cP8g
+fgbg = cv.createBackgroundSubtractorMOG2(varThreshold=100, detectShadows = True)
 
-cap = cv2.VideoCapture('ptest.avi')
+#Initializes width and height
+WIDTH = 0
+HEIGHT = 0
 
-fgbg = cv2.createBackgroundSubtractorMOG2(varThreshold=100, detectShadows = True)
+#Total tallies
+ENTER = 0
+EXIT = 0
 
-WIDTH = 640
-HEIGHT = 360
-green = np.array([0, 255, 0])
-red = np.array([0, 0, 255])
+#Initializes arrays for object tracking
 xcord = []
 ycord = []
+objectPath = []
 
-def green_rect(frame, x, y, w, h, thicc):
-    if x - thicc < 0 or y - thicc < 0 or x + w >= WIDTH or y + h >= HEIGHT:
-        return
-    frame[y:y + h, x-thicc:x] = green
-    frame[y:y + h, x+w-thicc:x+w-1] = green
-    frame[y-thicc:y, x:x + w] = green
-    #print(y + h, HEIGHT)
-    frame[y+h-thicc:y+h, x:x+w-1] = green
+#Colors
+blue = np.array([255, 0, 0])
+green = np.array([0, 255, 0])
+red = np.array([0, 0, 255])
+purple = np.array([128, 0, 128])
+orange = np.array([0, 128, 255])
+yellow = np.array([0, 255, 255])
 
+#Recursive function detect if it is a person or noise
 def island_size(scores, vted, rows, cols, i, j):
     vted[i, j] = True
     isl_size = 1
-    xcord.append(i)
-    ycord.append(j)
+
     if i - 1 >= 0 and scores[i-1, j] and not vted[i-1, j]:
-        isl_size += island_size(scores, vted, rows, cols, i-1, j) + 1
+        isl_size += island_size(scores, vted, rows, cols, i-1, j)
     if i + 1 < rows and scores[i+1, j] and not vted[i+1, j]:
-        isl_size += island_size(scores, vted, rows, cols, i+1, j) + 1
+        isl_size += island_size(scores, vted, rows, cols, i+1, j)
     if j - 1 >= 0 and scores[i, j-1] and not vted[i, j-1]:
-        isl_size += island_size(scores, vted, rows, cols, i, j-1) + 1
+        isl_size += island_size(scores, vted, rows, cols, i, j-1)
     if j + 1 < cols and scores[i, j+1] and not vted[i, j+1]:
-        isl_size += island_size(scores, vted, rows, cols, i, j+1) + 1
+        isl_size += island_size(scores, vted, rows, cols, i, j+1)
+
     return isl_size
 
-"""
-def falsify(scores, rows, cols, i, j):
-    scores[i, j] = 0
-    if i - 1 >= 0 and scores[i-1, j]:
-        falsify(scores, rows, cols, i-1, j)
-    if i + 1 < rows and scores[i+1, j]:
-        falsify(scores, rows, cols, i+1, j)
-    if j - 1 >= 0 and scores[i, j-1]:
-        falsify(scores, rows, cols, i, j-1)
-    if j + 1 < cols and scores[i, j+1]:
-        falsify(scores, rows, cols, i, j+1)
-"""
+# GIVES ALL THE ISLAND INFO. Size, mean, etc.
+def get_orange_island(scores, vted, rows, cols, i, j, step):
+    vted[i, j] = True
+    orange_island = {
+        "size": 1,
+        "x-coords": [i * step],
+        "y-coords": [j * step]
+    }
+    if i - 1 >= 0 and scores[i-1, j] and not vted[i-1, j]:
+        o_i = get_orange_island(scores, vted, rows, cols, i-1, j, step)
+        orange_island["size"] += o_i["size"]
+        orange_island["x-coords"] += o_i["x-coords"]
+        orange_island["y-coords"] += o_i["y-coords"]
+    # Important to have rows-1
+    if i + 1 < rows - 1 and scores[i+1, j] and not vted[i+1, j]:
+        o_i = get_orange_island(scores, vted, rows, cols, i+1, j, step)
+        orange_island["size"] += o_i["size"]
+        orange_island["x-coords"] += o_i["x-coords"]
+        orange_island["y-coords"] += o_i["y-coords"]
+    if j - 1 >= 0 and scores[i, j-1] and not vted[i, j-1]:
+        o_i = get_orange_island(scores, vted, rows, cols, i, j-1, step)
+        orange_island["size"] += o_i["size"]
+        orange_island["x-coords"] += o_i["x-coords"]
+        orange_island["y-coords"] += o_i["y-coords"]
+    if j + 1 < cols and scores[i, j+1] and not vted[i, j+1]:
+        o_i = get_orange_island(scores, vted, rows, cols, i, j+1, step)
+        orange_island["size"] += o_i["size"]
+        orange_island["x-coords"] += o_i["x-coords"]
+        orange_island["y-coords"] += o_i["y-coords"]
+    return orange_island
+
+people_in_frame = []
+gone_people = []
+
+class Person:
+    def __init__(self, x, y):
+        self.x_history = [x]
+        self.y_history = [y]
+        self.color = np.array([np.random.randint(50, 255), np.random.randint(50, 255), np.random.randint(50, 255)])
+
+def str_oi(oi):
+    return str(oi["x-mean"]) + ':' + str(oi["y-mean"])
 
 def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
     global xcord
     global ycord
-    # scores is a matrix containing values 0 <= x <= 1.
-    # 0 indicates a completely black area and 1 indicates
-    # a completely white area.
+    global objectPath
+    global ENTER
+    global EXIT
+    global people_in_frame
+
     scores_rows = (WIDTH - box_w) // step + 1
     scores_cols = (HEIGHT - box_h) // step + 1
+
     scores = np.empty(shape=(scores_rows, scores_cols))
+
     for i in range(0, WIDTH - box_w, step):
         for j in range(0, HEIGHT - box_h, step):
             scores[i // step, j // step] = np.sum(fgmask[j:j+box_h, i:i+box_w]) / (box_w * box_h * 255)
 
-
     THICC = 3
-
     visited = np.zeros(np.shape(scores), dtype = bool)
     scores = scores > threshold
 
     num_people = 0
     for i in range(scores_rows - 1):
-        for j in range(scores_cols - 1):
-            isl_size = island_size(scores, visited, scores_rows, scores_cols, i, j)
-            if isl_size >= isl_threshold:
-                xmean = np.sum(np.array(xcord))//len(xcord)*step
-                ymean = np.sum(np.array(ycord))//len(ycord)*step
-                print(xmean, ymean)
-                frame[ymean-8:ymean+8, xmean-8:xmean+8] = red
-                ycord = []
-                xcord = []
-                num_people += 1
-
-    for i in range(scores_rows - 1):
-        for j in range(scores_cols - 1):
+        for j in range(scores_cols):
             score = scores[i, j]
             x = i * step
             y = j * step
-            if score >= threshold:
+            if score:
+                xcord.append(x)
+                ycord.append(y)
+                frame[y:y+step, x:x+step] = yellow
+                """
                 # Left edge
                 if x - THICC >= 0 and scores[i - 1, j] < threshold:
                     frame[y:y+step, x-THICC:x] = green
@@ -103,25 +131,149 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
                 # Bottom
                 if y + step < HEIGHT and scores[i, j + 1] < threshold:
                     frame[y+step-THICC:y+step, x:x+step-1] = green
+                """
 
+    # Build list of orange islands
+    orange_visited = np.zeros(shape=scores.shape, dtype=bool)
+    orange_islands = []
+    for i in range(scores_rows - 1):
+        for j in range(scores_cols):
+            if scores[i, j] and not orange_visited[i, j]:
+                orange_island = get_orange_island(scores, orange_visited, scores_rows, scores_cols, i, j, step)
+                if orange_island["size"] >= isl_threshold:
+                    orange_islands.append(orange_island)
 
-frame_count = 0
+    for orange_island in orange_islands:
+        # Retrieve island properties
+        x_coords = orange_island["x-coords"]
+        y_coords = orange_island["y-coords"]
+        x_mean = int(np.mean(x_coords))
+        y_mean = int(np.mean(y_coords))
+        orange_island["x-mean"] = x_mean
+        orange_island["y-mean"] = y_mean
+
+        for x, y in zip(x_coords, y_coords):
+            frame[y:y+step, x:x+step] = orange
+        """
+        objectPath.append([x_mean, y_mean])
+        for k in range(len(objectPath) - 10, len(objectPath)):
+            if k >= 0:
+                frame[objectPath[k][1]-4:objectPath[k][1]+4, objectPath[k][0]-4:objectPath[k][0]+4] = red
+        frame[y_mean-16:y_mean+16, x_mean-16:x_mean+16] = blue
+
+        if len(objectPath) > 10:
+            x1 = objectPath[0][0]
+            x10 = objectPath[-10][0]
+            if x1 > 3*WIDTH//4 or x10 < WIDTH//4:
+                objectPath = []
+            elif x1 > WIDTH//2 and x10 < WIDTH//2:
+                EXIT += 1
+                objectPath = []
+            elif x1 < WIDTH//2 and x10 > WIDTH//2:
+                ENTER += 1
+                objectPath = []
+        """
+
+    CLOSENESS_THRESHOLD = 200
+    new_people_in_frame = []
+    matched_orange_islands = set()
+    for person in people_in_frame:
+        px = person.x_history[-1]
+        py = person.y_history[-1]
+        preserved = False
+        for orange_island in orange_islands:
+            ox = orange_island["x-mean"]
+            oy = orange_island["y-mean"]
+            if np.sqrt((ox - px) ** 2 + (oy - py) ** 2) <= CLOSENESS_THRESHOLD:
+                person.x_history.append(ox)
+                person.y_history.append(oy)
+                new_people_in_frame.append(person)
+                matched_orange_islands.add(str_oi(orange_island))
+                preserved = True
+                break
+        if not preserved:
+            gone_people.append(person)
+
+    for orange_island in orange_islands:
+        ox = orange_island["x-mean"]
+        oy = orange_island["y-mean"]
+        if str_oi(orange_island) not in matched_orange_islands:
+            gone_person = None
+            """for person in reversed(gone_people):
+                px = person.x_history[-1]
+                py = person.y_history[-1]
+                if np.sqrt((ox - px) ** 2 + (oy - py) ** 2) <= CLOSENESS_THRESHOLD:
+                    gone_person = person
+                    break"""
+            if gone_person == None:
+                new_people_in_frame.append(Person(orange_island["x-mean"], orange_island["y-mean"]))
+            else:
+                gone_person.x_history.append(ox)
+                gone_person.y_history.append(oy)
+                new_people_in_frame.append(gone_person)
+
+    people_in_frame = new_people_in_frame
+    #frame[0:HEIGHT, WIDTH//4-2:WIDTH//4+2] = purple
+    #frame[0:HEIGHT, 3*WIDTH//4-2:3*WIDTH//4+2] = purple
+    frame[0:HEIGHT, WIDTH//2-4:WIDTH//2+4] = purple
+
+    for person in people_in_frame:
+        x_history = person.x_history
+        y_history = person.y_history
+        for k in range(len(x_history) - 10, len(x_history)):
+            if k >= 0:
+                frame[y_history[k]-4:y_history[k]+4, x_history[k]-4:x_history[k]+4] = person.color
+        frame[y_history[-1]-16:y_history[-1]+16, x_history[-1]-16:x_history[-1]+16] = blue
+    """
+    if len(xcord) != 0 and len(ycord) != 0:
+        xmean = int(np.sum(np.array(xcord))//len(xcord))
+        ymean = int(np.sum(np.array(ycord))//len(ycord))
+        frame[ymean-4:ymean+4, xmean-4:xmean+4] = red
+        print(xmean, ymean)
+    ycord = []
+    xcord = []
+    """
+    return {
+        "people": people_in_frame
+    }
+
 while True:
-    ret, frame = cap.read()
+    ret, frame = video.read()
 
     fgmask = fgbg.apply(frame)
     HEIGHT = fgmask.shape[0]
     WIDTH = fgmask.shape[1]
 
-    backtorgb = cv2.cvtColor(fgmask, cv2.COLOR_GRAY2RGB)
+    backtorgb = cv.cvtColor(fgmask, cv.COLOR_GRAY2RGB)
 
-    bounding_boxes(fgmask, frame, 32, 32, 32, 0.4, 25)
+    box_info = bounding_boxes(fgmask, frame, 32, 32, 32, 0.4, 40)
 
-    cv2.imshow('frame', frame)
-    k = cv2.waitKey(30) & 0xff
-    frame_count += 1
+    box_text = f"Number of People: {len(box_info['people'])}"
+
+    # font
+    font = cv.FONT_HERSHEY_SIMPLEX
+
+    # org
+    org = (50, 50)
+
+    # fontScale
+    fontScale = 1
+
+    # Line thickness of 2 px
+    thickness = 2
+
+    # Using cv2.putText() method
+    frame = cv.putText(frame, box_text, org, font,
+                       fontScale, (255, 255, 255), thickness, cv.LINE_AA)
+    frame = cv.putText(frame, ('ENTER: ' + str(ENTER)), (50, 100), font,
+                       fontScale, (255, 255, 255), thickness, cv.LINE_AA)
+    frame = cv.putText(frame, ('EXIT: ' + str(EXIT)), (50, 150), font,
+                       fontScale, (255, 255, 255), thickness, cv.LINE_AA)
+
+    cv.imshow('frame', frame)
+    k = cv.waitKey(30) & 0xff
     if k == 27:
         break
 
-cap.release()
-cv2.destroyAllWindows()
+video.release()
+cv.destroyAllWindows()
