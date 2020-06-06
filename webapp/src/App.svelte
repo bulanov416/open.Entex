@@ -2,7 +2,8 @@
 	export let name;
 	import { db}  from './firebase';
 	import { onMount } from 'svelte';
-	
+
+
 	/*function getStores() {
 		let tempStores = [];
 		

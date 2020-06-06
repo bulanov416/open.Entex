@@ -2,26 +2,20 @@
 	import { db } from './firebase';
 	export let open = false
 	export let allStores;
-
-	function foo(storeName2){
-		console.log(storeName2 + " | ");
-	}
-	
-
+	export let numPeopleArray = [];
 
 	async function populateData(storeName) {
-		
-		await db.collection("stores").doc(storeName).collection("dataSample").get().then((querySnapshot) => {
-			//let numPeopleArray = []
+		await db.collection("stores").doc(storeName).collection("dataSamples").get().then((querySnapshot) => {
 			querySnapshot.forEach((doc) => {
 				console.log(doc.id);
 				let data = {numPeople: doc.get("numPeople"), timeStamp: doc.get("timeStamp")}
-				console.log("helloworld");
+				console.log(data);
+				numPeopleArray.push(data);
 			});
-		//numPeopleArray = numPeopleArray;
+			numPeopleArray = numPeopleArray;
 		});
-		//console.log(numPeopleArray);
-		//return numPeopleArray;
+		console.log(numPeopleArray);
+		return numPeopleArray;
 	}
 
 
@@ -31,7 +25,7 @@
  <nav class="p-12 text-xl">
  	<div class="allStores">
 	{#each allStores as store}
-	<a class="block" id={store.id} href={foo(store.id)}>{store.name}</a>
+	<a class="block" on:click|capture={populateData(store.id)}>{store.name}</a>
 	{/each}
 	</div>
   </nav>
