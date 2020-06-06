@@ -23,14 +23,21 @@
 
 	getPeople("walmart");
 
+	import Navbar from './Navbar.svelte'
+	import Sidebar from './Sidebar.svelte'
+	import Main from './Main.svelte';
+
+	let open = false
+
 </script>
 
-<main>
-	<h1>Hello {name}!</h1>
-	<p>Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn how to build Svelte apps.</p>
+<Sidebar bind:open/>
+<Navbar bind:sidebar={open}/>
+<Main/>
 
-
-</main>
+<svelte:head>
+	<link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet"/>
+</svelte:head>
 
 <style>
 	main {
