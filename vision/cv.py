@@ -16,6 +16,7 @@ xcord = []
 ycord = []
 
 #Colors
+blue = np.array([255, 0, 0])
 green = np.array([0, 255, 0])
 red = np.array([0, 0, 255])
 orange = np.array([0, 128, 255])
@@ -59,7 +60,36 @@ def falsify(scores, rows, cols, i, j):
         falsify(scores, rows, cols, i, j+1)
 """
 
-def island
+# GIVES ALL THE ISLAND INFO. Size, mean, etc.
+def get_orange_island(scores, vted, rows, cols, i, j, step):
+    vted[i, j] = True
+    orange_island = {
+        "size": 1,
+        "x-coords": [i * step],
+        "y-coords": [j * step]
+    }
+    if i - 1 >= 0 and scores[i-1, j] and not vted[i-1, j]:
+        o_i = get_orange_island(scores, vted, rows, cols, i-1, j, step)
+        orange_island["size"] += o_i["size"]
+        orange_island["x-coords"] += o_i["x-coords"]
+        orange_island["y-coords"] += o_i["y-coords"]
+    # Important to have rows-1
+    if i + 1 < rows - 1 and scores[i+1, j] and not vted[i+1, j]:
+        o_i = get_orange_island(scores, vted, rows, cols, i+1, j, step)
+        orange_island["size"] += o_i["size"]
+        orange_island["x-coords"] += o_i["x-coords"]
+        orange_island["y-coords"] += o_i["y-coords"]
+    if j - 1 >= 0 and scores[i, j-1] and not vted[i, j-1]:
+        o_i = get_orange_island(scores, vted, rows, cols, i, j-1, step)
+        orange_island["size"] += o_i["size"]
+        orange_island["x-coords"] += o_i["x-coords"]
+        orange_island["y-coords"] += o_i["y-coords"]
+    if j + 1 < cols and scores[i, j+1] and not vted[i, j+1]:
+        o_i = get_orange_island(scores, vted, rows, cols, i, j+1, step)
+        orange_island["size"] += o_i["size"]
+        orange_island["x-coords"] += o_i["x-coords"]
+        orange_island["y-coords"] += o_i["y-coords"]
+    return orange_island
 
 def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
     global xcord
@@ -102,7 +132,7 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
     """
 
     for i in range(scores_rows - 1):
-        for j in range(scores_cols - 1):
+        for j in range(scores_cols):
             score = scores[i, j]
             x = i * step
             y = j * step
@@ -125,8 +155,27 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
                     frame[y+step-THICC:y+step, x:x+step-1] = green
                 """
 
-    # Orange islands
+    # Build list of orange islands
+    orange_visited = np.zeros(shape=scores.shape, dtype=bool)
+    orange_islands = []
+    for i in range(scores_rows - 1):
+        for j in range(scores_cols):
+            if scores[i, j] and not orange_visited[i, j]:
+                orange_island = get_orange_island(scores, orange_visited, scores_rows, scores_cols, i, j, step)
+                if orange_island["size"] >= isl_threshold:
+                    orange_islands.append(orange_island)
 
+    for orange_island in orange_islands:
+        # Retrieve island properties
+        x_coords = orange_island["x-coords"]
+        y_coords = orange_island["y-coords"]
+        x_mean = int(np.mean(x_coords))
+        y_mean = int(np.mean(y_coords))
+        for x, y in zip(x_coords, y_coords):
+            frame[y:y+step, x:x+step] = orange
+        frame[y_mean-16:y_mean+16, x_mean-16:x_mean+16] = blue
+
+    """
     if len(xcord) != 0 and len(ycord) != 0:
         xmean = int(np.sum(np.array(xcord))//len(xcord))
         ymean = int(np.sum(np.array(ycord))//len(ycord))
@@ -134,6 +183,7 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
         print(xmean, ymean)
     ycord = []
     xcord = []
+    """
 
 
 frame_count = 0
@@ -146,9 +196,9 @@ while True:
 
     backtorgb = cv.cvtColor(fgmask, cv.COLOR_GRAY2RGB)
 
-    bounding_boxes(fgmask, backtorgb, 32, 32, 32, 0.4, 25)
+    bounding_boxes(fgmask, frame, 32, 32, 32, 0.4, 40)
 
-    cv.imshow('frame', backtorgb)
+    cv.imshow('frame', frame)
     k = cv.waitKey(30) & 0xff
     frame_count += 1
     if k == 27:
