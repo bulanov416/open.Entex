@@ -5,65 +5,56 @@
 
   let data = currentStoreData
   
-  var options = {
-          series: [{
-          data: data.slice()
-  }],
-          
+var options = {
   chart: {
-          id: 'realtime',
-          height: 350,
-          type: 'line',
-          animations: {
-            enabled: true,
-            easing: 'linear',
-            dynamicAnimation: {
-              speed: 1000
-            }
-          },
-          toolbar: {
-            show: false
-          },
-          zoom: {
-            enabled: false
-          }
+    height: 380,
+    width: "100%",
+    type: "area",
+    animations: {
+      initialAnimation: {
+        enabled: false
+      }
+    }
   },
-  dataLabels: {
-          enabled: false
-  },
-  stroke: {
-          curve: 'smooth'
-  },
-  title: {
-          text: 'Dynamic Updating Chart',
-          align: 'left'
-  },
-  markers: {
-          size: 0
-  },
+  series: [
+    {
+      name: "Series 1",
+      data: [
+        {
+          x: "02-10-2017 GMT",
+          y: 34
+        },
+        {
+          x: "02-11-2017 GMT",
+          y: 43
+        },
+        {
+          x: "02-12-2017 GMT",
+          y: 31
+        },
+        {
+          x: "02-13-2017 GMT",
+          y: 43
+        },
+        {
+          x: "02-14-2017 GMT",
+          y: 33
+        },
+        {
+          x: "02-15-2017 GMT",
+          y: 52
+        }
+      ]
+    }
+  ],
   xaxis: {
-          type: 'datetime'
-  },
-  yaxis: {
-          max: 100
-  },
-  legend: {
-          show: false
-  },};
+    type: "numeric"
+  }
+};
 
-  var chart = new ApexCharts(document.querySelector("#chart"), options);
-  chart.render();
-  window.setInterval(function () {
-        getNewSeries(lastDate, {
-          min: 10,
-          max: 90
-  })
-  chart.updateSeries([{
-          data: data
-  }])
-  }, 1000)
-      
+var chart = new ApexCharts(document.querySelector("#chart"), options);
 
+chart.render();
 </script>
 
 <div id="chart">
