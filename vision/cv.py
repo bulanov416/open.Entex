@@ -17,7 +17,6 @@ EXIT = 0
 
 #People
 people_in_frame = []
-gone_people = []
 
 #Colors
 blue = np.array([255, 0, 0])
@@ -71,9 +70,10 @@ def get_orange_island(scores, vted, rows, cols, i, j, step):
     return orange_island
 
 class Person:
-    def __init__(self, x, y):
+    def __init__(self, x, y, movement):
         self.x_history = [x]
         self.y_history = [y]
+        self.movement = 0;
         self.color = np.array([np.random.randint(50, 255), np.random.randint(50, 255), np.random.randint(50, 255)])
 
 def str_oi(oi):
@@ -111,49 +111,44 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
         orange_island["x-mean"] = int(np.mean(orange_island["x-coords"]))
         orange_island["y-mean"] = int(np.mean(orange_island["y-coords"]))
         for x, y in zip(orange_island["x-coords"], orange_island["y-coords"]):
-            frame[y:y+step, x:x+step] = orange
+            frame[y:y+step, x:x+step] = green
 
     CLOSENESS_THRESHOLD = 200
     new_people_in_frame = []
     matched_orange_islands = set()
+
     for person in people_in_frame:
-        px = person.x_history[-1]
-        py = person.y_history[-1]
-        preserved = False
         for orange_island in orange_islands:
             ox = orange_island["x-mean"]
             oy = orange_island["y-mean"]
-            if np.sqrt((ox - px) ** 2 + (oy - py) ** 2) <= CLOSENESS_THRESHOLD:
+            if np.sqrt((ox - person.x_history[-1]) ** 2 + (oy - person.y_history[-1]) ** 2) <= CLOSENESS_THRESHOLD:
                 person.x_history.append(ox)
                 person.y_history.append(oy)
                 new_people_in_frame.append(person)
                 matched_orange_islands.add(str_oi(orange_island))
-                preserved = True
                 break
-        if not preserved:
-            gone_people.append(person)
 
     for orange_island in orange_islands:
-        ox = orange_island["x-mean"]
-        oy = orange_island["y-mean"]
         if str_oi(orange_island) not in matched_orange_islands:
-            gone_person = None
-            """for person in reversed(gone_people):
-                px = person.x_history[-1]
-                py = person.y_history[-1]
-                if np.sqrt((ox - px) ** 2 + (oy - py) ** 2) <= CLOSENESS_THRESHOLD:
-                    gone_person = person
-                    break"""
-            if gone_person == None:
-                new_people_in_frame.append(Person(orange_island["x-mean"], orange_island["y-mean"]))
-            else:
-                gone_person.x_history.append(ox)
-                gone_person.y_history.append(oy)
-                new_people_in_frame.append(gone_person)
+            new_people_in_frame.append(Person(orange_island["x-mean"], orange_island["y-mean"], 0))
 
     people_in_frame = new_people_in_frame
-    #frame[0:HEIGHT, WIDTH//4-2:WIDTH//4+2] = purple
-    #frame[0:HEIGHT, 3*WIDTH//4-2:3*WIDTH//4+2] = purple
+    for person in people_in_frame:
+        if len(person.x_history) > 5:
+            x = person.x_history
+            x1 = x[-1]
+            x5 = x[-5]
+            if x1 > WIDTH//2 and x5 < WIDTH//2 and person.movement == 0:
+                print(x1, x5)
+                EXIT += 1
+                person.movement = -1
+            if x1 < WIDTH//2 and x5 > WIDTH//2 and person.movement == 0:
+                print(x1, x5)
+                ENTER += 1
+                person.movement = 1
+            if x1 > 3*WIDTH//4 or x1 < WIDTH//4:
+                person.movement = 0
+    #PURPLE BAR
     frame[0:HEIGHT, WIDTH//2-4:WIDTH//2+4] = purple
 
     for person in people_in_frame:
@@ -161,17 +156,9 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
         y_history = person.y_history
         for k in range(len(x_history) - 10, len(x_history)):
             if k >= 0:
-                frame[y_history[k]-4:y_history[k]+4, x_history[k]-4:x_history[k]+4] = person.color
+                frame[y_history[k]-8:y_history[k]+8, x_history[k]-8:x_history[k]+8] = person.color
         frame[y_history[-1]-16:y_history[-1]+16, x_history[-1]-16:x_history[-1]+16] = blue
-    """
-    if len(xcord) != 0 and len(ycord) != 0:
-        xmean = int(np.sum(np.array(xcord))//len(xcord))
-        ymean = int(np.sum(np.array(ycord))//len(ycord))
-        frame[ymean-4:ymean+4, xmean-4:xmean+4] = red
-        print(xmean, ymean)
-    ycord = []
-    xcord = []
-    """
+
     return {
         "people": people_in_frame
     }
