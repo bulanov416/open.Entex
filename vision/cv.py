@@ -55,6 +55,8 @@ def falsify(scores, rows, cols, i, j):
         falsify(scores, rows, cols, i, j+1)
 """
 
+def island
+
 def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
     global xcord
     global ycord
@@ -100,7 +102,7 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
             score = scores[i, j]
             x = i * step
             y = j * step
-            if score:# >= threshold:
+            if score:
                 xcord.append(x)
                 ycord.append(y)
                 frame[y:y+step, x:x+step] = green
@@ -118,6 +120,9 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
                 if y + step < HEIGHT and scores[i, j + 1] < threshold:
                     frame[y+step-THICC:y+step, x:x+step-1] = green
                 """
+
+    # Orange islands
+
     if len(xcord) != 0 and len(ycord) != 0:
         xmean = int(np.sum(np.array(xcord))//len(xcord))
         ymean = int(np.sum(np.array(ycord))//len(ycord))
