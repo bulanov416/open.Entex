@@ -1,12 +1,19 @@
 <script>
+	import PeopleInPlace from './PeopleInPlace.svelte';
 	export let currentStore;
+	import Chart from './Chart.svelte';
+	import Graph from './Graph.svelte';
 </script>
 <main class="p-4">
 	{#if !!currentStore}
 	<h2>The store is {currentStore}</h2>
+	<PeopleInPlace currentStore={currentStore}/>
 	{:else}
 	<strong>Welcome to ____ Please choose a store from the menue on the left</strong>
 	{/if}
+
+	<Chart/>
+	<Graph/>
 </main>
 
 <style>
