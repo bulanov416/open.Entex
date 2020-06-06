@@ -1,21 +1,24 @@
-import cv2
+import cv2 as cv
 import numpy as np
-
 import sys
+
+video = cv.VideoCapture('ptest.avi')
+
 sys.setrecursionlimit(2000)
-# Video available at https://www.youtube.com/watch?v=RQgn1m9cP8g
+fgbg = cv.createBackgroundSubtractorMOG2(varThreshold=100, detectShadows = True)
 
-cap = cv2.VideoCapture('ptest.avi')
+#Initializes width and height
+WIDTH = 0
+HEIGHT = 0
 
-fgbg = cv2.createBackgroundSubtractorMOG2(varThreshold=100, detectShadows = True)
-
-WIDTH = 640
-HEIGHT = 360
-green = np.array([0, 255, 0])
-red = np.array([0, 0, 255])
-yellah = np.array([0, 128, 255])
+#Initializes arrays for object tracking
 xcord = []
 ycord = []
+
+#Colors
+green = np.array([0, 255, 0])
+red = np.array([0, 0, 255])
+yellow = np.array([0, 128, 255])
 
 def green_rect(frame, x, y, w, h, thicc):
     if x - thicc < 0 or y - thicc < 0 or x + w >= WIDTH or y + h >= HEIGHT:
@@ -75,13 +78,13 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
     num_people = 0
     """
     for i in range(scores_rows - 1):
-        
+
         for j in range(scores_cols - 1):
             isl_size = island_size(scores, visited, scores_rows, scores_cols, i, j)
 
             if isl_size >= isl_threshold:
                 for x, y in zip(xcord, ycord):
-                    frame[y*step:(y+1)*step, x*step:(x+1)*step] = yellah
+                    frame[y*step:(y+1)*step, x*step:(x+1)*step] = yellow
 
                 xmean = np.sum(np.array(xcord))//len(xcord)*step
                 ymean = np.sum(np.array(ycord))//len(ycord)*step
@@ -126,21 +129,21 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
 
 frame_count = 0
 while True:
-    ret, frame = cap.read()
+    ret, frame = video.read()
 
     fgmask = fgbg.apply(frame)
     HEIGHT = fgmask.shape[0]
     WIDTH = fgmask.shape[1]
 
-    backtorgb = cv2.cvtColor(fgmask, cv2.COLOR_GRAY2RGB)
+    backtorgb = cv.cvtColor(fgmask, cv.COLOR_GRAY2RGB)
 
     bounding_boxes(fgmask, backtorgb, 32, 32, 32, 0.4, 25)
 
-    cv2.imshow('frame', backtorgb)
-    k = cv2.waitKey(30) & 0xff
+    cv.imshow('frame', backtorgb)
+    k = cv.waitKey(30) & 0xff
     frame_count += 1
     if k == 27:
         break
 
-cap.release()
-cv2.destroyAllWindows()
+video.release()
+cv.destroyAllWindows()
