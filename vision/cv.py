@@ -18,16 +18,20 @@ ycord = []
 #Colors
 green = np.array([0, 255, 0])
 red = np.array([0, 0, 255])
-yellow = np.array([0, 128, 255])
+orange = np.array([0, 128, 255])
 
-def green_rect(frame, x, y, w, h, thicc):
-    if x - thicc < 0 or y - thicc < 0 or x + w >= WIDTH or y + h >= HEIGHT:
+"""
+def outlined_rect(frame, x, y, w, h, thick, color):
+    #Edge cases
+    if x - thick < 0 or y - thick < 0 or x + w >= WIDTH or y + h >= HEIGHT:
         return
-    frame[y:y + h, x-thicc:x] = green
-    frame[y:y + h, x+w-thicc:x+w-1] = green
-    frame[y-thicc:y, x:x + w] = green
-    #print(y + h, HEIGHT)
-    frame[y+h-thicc:y+h, x:x+w-1] = green
+
+    #Draws Each Border
+    frame[y:y + h, x-thick:x] = color
+    frame[y:y + h, x+w-thick:x+w-1] = color
+    frame[y-thick:y, x:x + w] = color
+    frame[y+h-thick:y+h, x:x+w-1] = color
+"""
 
 def island_size(scores, vted, rows, cols, i, j):
     vted[i, j] = True
@@ -84,7 +88,7 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
 
             if isl_size >= isl_threshold:
                 for x, y in zip(xcord, ycord):
-                    frame[y*step:(y+1)*step, x*step:(x+1)*step] = yellow
+                    frame[y*step:(y+1)*step, x*step:(x+1)*step] = orange
 
                 xmean = np.sum(np.array(xcord))//len(xcord)*step
                 ymean = np.sum(np.array(ycord))//len(ycord)*step
