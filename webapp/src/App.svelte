@@ -2,7 +2,9 @@
 	export let name;
 	import { db}  from './firebase';
 	import { onMount } from 'svelte';
-	
+	import { currentStoreId } from './stores.js';
+
+
 	/*function getStores() {
 		let tempStores = [];
 		
@@ -42,7 +44,7 @@
 
 <Sidebar bind:open allStores={stores}/>
 <Navbar bind:sidebar={open}/>
-<Main/>
+<Main currentStore={$currentStoreId}/>
 
 <svelte:head>
 	<link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet"/>
