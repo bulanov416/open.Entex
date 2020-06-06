@@ -8,7 +8,7 @@
 </script>
 <main class="p-4">
 	{#if !!currentStore}
-	<h1>welcome to {currentStore}</h1>
+	<h1>{currentStore}</h1>
 	<GraphHandler currentStore={currentStore}/>
 	{:else}
 	<strong>Welcome to ____ Please choose a store from the menue on the left</strong>

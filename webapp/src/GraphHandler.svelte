@@ -4,7 +4,10 @@
   export let currentStore;
   import Graph from './Graph.svelte';
   import { onMount } from 'svelte';
-  import { currentStoreData } from './storeDataStore.js';
+  import { currentStoreData, currentStoreData2 } from './storeDataStore.js';
+  let weep = false
+  var unixTimestamp = 1553617238;
+  var date = new Date(unixTimestamp*1000);
 
 	onMount(async () => {
 		/*await db.collection("stores").get().then((querySnapshot) => {
@@ -18,27 +21,35 @@
 		});
     console.log(stores)*/
     if (!!currentStore) {
-      let dataPoints = []
+      let timePoints = []
+      let capPoints = []
       await db.collection("stores").doc(currentStore).collection("dataSamples").get().then((querySnapshot) => {
       querySnapshot.forEach((doc) => {
-              let foo = [doc.get("timeStamp"), doc.get("numPeople")]
-              dataPoints.push(foo);
+              console.log(doc.get("timeStamp"))
+              var myDate = new Date(doc.get("timeStamp")*1000);
+              let foo = myDate.toLocaleString()
+              timePoints.push(foo);
+              let bar = doc.get("numPeople")
+              capPoints.push(bar);
           });
-        console.log(dataPoints)
-        dataPoints = dataPoints
-        return dataPoints
+        console.log(timePoints)
+        timePoints = timePoints
+        return timePoints
       })  
       console.log("foo")
-      currentStoreData.set(dataPoints)
-      console.log(dataPoints)
+      currentStoreData.set(timePoints)
+      console.log(timePoints)
+      console.log(capPoints)
+      currentStoreData2.set(capPoints)
+      weep = true
     }
   })
   
 </script>
 
 <div>
-	{#if !!currentStore && !!{$currentStoreData}}
-	<Graph currentStoreData={$currentStoreData}/>
+	{#if !!currentStore && weep == true}
+	<Graph currentStoreTimes={$currentStoreData} currentStoreCaps={$currentStoreData2}/>
 	{:else}
 	<strong>Loading...</strong>
 	{/if}
