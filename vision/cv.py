@@ -11,6 +11,10 @@ fgbg = cv.createBackgroundSubtractorMOG2(varThreshold=100, detectShadows = True)
 WIDTH = 0
 HEIGHT = 0
 
+#Total tallies
+ENTER = 0
+EXIT = 0
+
 #Initializes arrays for object tracking
 xcord = []
 ycord = []
@@ -20,6 +24,7 @@ objectPath = []
 blue = np.array([255, 0, 0])
 green = np.array([0, 255, 0])
 red = np.array([0, 0, 255])
+purple = np.array([128, 0, 128])
 orange = np.array([0, 128, 255])
 yellow = np.array([0, 255, 255])
 
@@ -73,6 +78,9 @@ def get_orange_island(scores, vted, rows, cols, i, j, step):
 def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
     global xcord
     global ycord
+    global objectPath
+    global ENTER
+    global EXIT
 
     scores_rows = (WIDTH - box_w) // step + 1
     scores_cols = (HEIGHT - box_h) // step + 1
@@ -130,11 +138,31 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
         y_mean = int(np.mean(y_coords))
         for x, y in zip(x_coords, y_coords):
             frame[y:y+step, x:x+step] = orange
+
         objectPath.append([x_mean, y_mean])
         for k in range(len(objectPath) - 10, len(objectPath)):
             if k >= 0:
                 frame[objectPath[k][1]-4:objectPath[k][1]+4, objectPath[k][0]-4:objectPath[k][0]+4] = red
         frame[y_mean-16:y_mean+16, x_mean-16:x_mean+16] = blue
+
+        if len(objectPath) > 10:
+            x1 = objectPath[0][0]
+            x10 = objectPath[-10][0]
+            if x1 > 3*WIDTH//4 or x10 < WIDTH//4:
+                objectPath = []
+            elif x1 > WIDTH//2 and x10 < WIDTH//2:
+                print("HELLOW")
+                EXIT += 1
+                objectPath = []
+            elif x1 < WIDTH//2 and x10 > WIDTH//2:
+                ENTER += 1
+                objectPath = []
+
+
+    #frame[0:HEIGHT, WIDTH//4-2:WIDTH//4+2] = purple
+    #frame[0:HEIGHT, 3*WIDTH//4-2:3*WIDTH//4+2] = purple
+    frame[0:HEIGHT, WIDTH//2-4:WIDTH//2+4] = purple
+
 
     """
     if len(xcord) != 0 and len(ycord) != 0:
@@ -162,20 +190,24 @@ while True:
 
     box_text = f"Number of People: {len(box_info['people'])}"
 
-    # font 
-    font = cv.FONT_HERSHEY_SIMPLEX 
-  
-    # org 
-    org = (50, 50) 
-      
-    # fontScale 
+    # font
+    font = cv.FONT_HERSHEY_SIMPLEX
+
+    # org
+    org = (50, 50)
+
+    # fontScale
     fontScale = 1
-      
-    # Line thickness of 2 px 
+
+    # Line thickness of 2 px
     thickness = 2
-       
-    # Using cv2.putText() method 
-    frame = cv.putText(frame, box_text, org, font,  
+
+    # Using cv2.putText() method
+    frame = cv.putText(frame, box_text, org, font,
+                       fontScale, (255, 255, 255), thickness, cv.LINE_AA)
+    frame = cv.putText(frame, ('ENTER: ' + str(ENTER)), (50, 100), font,
+                       fontScale, (255, 255, 255), thickness, cv.LINE_AA)
+    frame = cv.putText(frame, ('EXIT: ' + str(EXIT)), (50, 150), font,
                        fontScale, (255, 255, 255), thickness, cv.LINE_AA)
 
     cv.imshow('frame', frame)
