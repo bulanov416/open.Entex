@@ -13,6 +13,7 @@ WIDTH = 640
 HEIGHT = 360
 green = np.array([0, 255, 0])
 red = np.array([0, 0, 255])
+yellah = np.array([0, 128, 255])
 xcord = []
 ycord = []
 
@@ -28,16 +29,14 @@ def green_rect(frame, x, y, w, h, thicc):
 def island_size(scores, vted, rows, cols, i, j):
     vted[i, j] = True
     isl_size = 1
-    xcord.append(i)
-    ycord.append(j)
     if i - 1 >= 0 and scores[i-1, j] and not vted[i-1, j]:
-        isl_size += island_size(scores, vted, rows, cols, i-1, j) + 1
+        isl_size += island_size(scores, vted, rows, cols, i-1, j)
     if i + 1 < rows and scores[i+1, j] and not vted[i+1, j]:
-        isl_size += island_size(scores, vted, rows, cols, i+1, j) + 1
+        isl_size += island_size(scores, vted, rows, cols, i+1, j)
     if j - 1 >= 0 and scores[i, j-1] and not vted[i, j-1]:
-        isl_size += island_size(scores, vted, rows, cols, i, j-1) + 1
+        isl_size += island_size(scores, vted, rows, cols, i, j-1)
     if j + 1 < cols and scores[i, j+1] and not vted[i, j+1]:
-        isl_size += island_size(scores, vted, rows, cols, i, j+1) + 1
+        isl_size += island_size(scores, vted, rows, cols, i, j+1)
     return isl_size
 
 """
@@ -71,26 +70,38 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
 
     visited = np.zeros(np.shape(scores), dtype = bool)
     scores = scores > threshold
+    #print(visited)
 
     num_people = 0
+    """
     for i in range(scores_rows - 1):
+        
         for j in range(scores_cols - 1):
             isl_size = island_size(scores, visited, scores_rows, scores_cols, i, j)
+
             if isl_size >= isl_threshold:
+                for x, y in zip(xcord, ycord):
+                    frame[y*step:(y+1)*step, x*step:(x+1)*step] = yellah
+
                 xmean = np.sum(np.array(xcord))//len(xcord)*step
                 ymean = np.sum(np.array(ycord))//len(ycord)*step
-                print(xmean, ymean)
                 frame[ymean-8:ymean+8, xmean-8:xmean+8] = red
                 ycord = []
                 xcord = []
                 num_people += 1
+            print(isl_size)
+    """
 
     for i in range(scores_rows - 1):
         for j in range(scores_cols - 1):
             score = scores[i, j]
             x = i * step
             y = j * step
-            if score >= threshold:
+            if score:# >= threshold:
+                xcord.append(x)
+                ycord.append(y)
+                frame[y:y+step, x:x+step] = green
+                """
                 # Left edge
                 if x - THICC >= 0 and scores[i - 1, j] < threshold:
                     frame[y:y+step, x-THICC:x] = green
@@ -103,6 +114,14 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
                 # Bottom
                 if y + step < HEIGHT and scores[i, j + 1] < threshold:
                     frame[y+step-THICC:y+step, x:x+step-1] = green
+                """
+    if len(xcord) != 0 and len(ycord) != 0:
+        xmean = int(np.sum(np.array(xcord))//len(xcord))
+        ymean = int(np.sum(np.array(ycord))//len(ycord))
+        frame[ymean-4:ymean+4, xmean-4:xmean+4] = red
+        print(xmean, ymean)
+    ycord = []
+    xcord = []
 
 
 frame_count = 0
@@ -115,9 +134,9 @@ while True:
 
     backtorgb = cv2.cvtColor(fgmask, cv2.COLOR_GRAY2RGB)
 
-    bounding_boxes(fgmask, frame, 32, 32, 32, 0.4, 25)
+    bounding_boxes(fgmask, backtorgb, 32, 32, 32, 0.4, 25)
 
-    cv2.imshow('frame', frame)
+    cv2.imshow('frame', backtorgb)
     k = cv2.waitKey(30) & 0xff
     frame_count += 1
     if k == 27:
