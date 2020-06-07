@@ -1,6 +1,9 @@
 import cv2 as cv
 import numpy as np
 import sys
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
 
 video = cv.VideoCapture('ptest.avi')
 
@@ -14,6 +17,8 @@ HEIGHT = 0
 #Total tallies of people entering and exiting
 ENTER = 0
 EXIT = 0
+TOTAL = 0
+LASTTOTAL = 0
 
 #People
 people_in_frame = []
@@ -164,6 +169,13 @@ def bounding_boxes(fgmask, frame, box_w, box_h, step, threshold, isl_threshold):
     """
     return { "people": people_in_frame }
 
+cred = credentials.Certificate('firebase-sdk.json')
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
+#adding first data
+#doc_ref = db.collection('stores').document('walmart')
+#print(type(doc_ref))
 while True:
     ret, frame = video.read()
 
@@ -174,6 +186,16 @@ while True:
     backtorgb = cv.cvtColor(fgmask, cv.COLOR_GRAY2RGB)
     box_info = bounding_boxes(fgmask, frame, 32, 32, 32, 0.4, 40)
     box_text = f"Visible People: {len(box_info['people'])}"
+
+    TOTAL = ENTER-EXIT
+    if TOTAL != LASTTOTAL:
+        db.collection('stores').document('walmart').update({'NumPeople':(ENTER-EXIT),})
+        sample = {
+            'numPeople':(ENTER-EXIT),
+            'timeStamp':firestore.SERVER_TIMESTAMP,
+        }
+        db.collection('stores').document('walmart').collection('dataSamples').add(sample)
+        LASTTOTAL = TOTAL
 
     # font
     font = cv.FONT_HERSHEY_SIMPLEX
