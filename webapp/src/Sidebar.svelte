@@ -28,7 +28,7 @@
 
 </script>
 
-<aside class="absolute w-full h-full bg-gray-200 border-r-2 shadow-lg" class:open>
+<aside class="absolute w-half h-full bg-gray-200 border-r-2 shadow-lg" class:open>
  <nav class="p-12 text-xl">
  	<div class="allStores">
 	{#each allStores as store}
