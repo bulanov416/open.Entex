@@ -1,5 +1,5 @@
 <svg width=auto height=30>
-	<text x=0 y=20>HackNortheast</text>
+	<text x=0 y=20>open.ENTEX</text>
 </svg>
 
 <style>

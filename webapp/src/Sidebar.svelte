@@ -32,7 +32,7 @@
  <nav class="p-12 text-xl">
  	<div class="allStores">
 	{#each allStores as store}
-	<a class="block" on:click|capture={populateData(store.id)}>{store.name}</a>
+	<a class="block" on:click|capture={populateData(store.id)} style="font-size:30px;">{store.name}</a>
 	{/each}
 	</div>
   </nav>

@@ -5,23 +5,6 @@
 	import Chart from './Chart.svelte';
 	import GraphHandler from './GraphHandler.svelte';
 	import ChartHandler from './ChartHandler.svelte';
-    
-	async function getNumPeople(store) {
-	    var docRef = db.collection("stores").doc(store);
-
-	    docRef.get().then(function(doc) {
-	        if (doc.exists) {
-	            console.log("Document data:", doc.get('NumPeople'));
-	            return doc.get('NumPeople');
-	        } else {
-	            // doc.data() will be undefined in this case
-	            console.log("No such document!");
-	        }
-	    }).catch(function(error) {
-	        console.log("Error getting document:", error);
-	    });
-  	}
-
 
 </script>
 <main class="p-4">
@@ -29,8 +12,10 @@
 	<h1>{currentStore}</h1>
 	<GraphHandler currentStore={currentStore}/>
 	<ChartHandler currentStore={currentStore}/>
+	<button></button>
 	{:else}
-	<strong>Welcome to ____ Please choose a store from the menue on the left</strong>
+	<img id="logo" src="./open_entex_logo.png">
+	<strong style="font-size:40px;">Welcome to <i>Open Entex</i>.<br>Please choose a store from the menu on the left.</strong>
 	{/if}
 </main>
 
@@ -44,5 +29,13 @@
 		text-transform: uppercase;
 		font-size: 4em;
 		font-weight: 100;
+	}
+
+	#logo {
+    	justify-content: center;
+    	display: flex;
+    	text-align: center;
+    	margin-left: auto;
+    	margin-right: auto;
 	}
 </style>
