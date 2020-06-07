@@ -26,8 +26,9 @@
       await db.collection("stores").doc(currentStore).collection("dataSamples").get().then((querySnapshot) => {
       querySnapshot.forEach((doc) => {
               console.log(doc.get("timeStamp"))
-              var myDate = new Date(doc.get("timeStamp")*1000);
-              let foo = myDate.toLocaleString()
+              var eek = doc.get("timeStamp")*1000
+              var myDate = new Date(eek - 100000000000000);
+              let foo = myDate;
               timePoints.push(foo);
               let bar = doc.get("numPeople")
               capPoints.push(bar);
